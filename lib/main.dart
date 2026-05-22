@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'providers/student_provider.dart';
 import 'providers/room_provider.dart';
 import 'providers/notice_provider.dart';
+import 'providers/history_provider.dart';
 import 'routes/app_routes.dart';
 
 import 'screens/auth/splash_screen.dart';
@@ -23,6 +24,9 @@ import 'screens/student/visitor_request_screen.dart';
 import 'screens/student/room_change_screen.dart';
 import 'screens/student/fee_payment_screen.dart';
 import 'screens/student/edit_profile_screen.dart';
+import 'screens/student/history_screen.dart';
+import 'screens/student/help_faq_screen.dart';
+import 'screens/student/contact_us_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +39,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => StudentProvider()),
         ChangeNotifierProvider(create: (_) => RoomProvider()),
         ChangeNotifierProvider(create: (_) => NoticeProvider()),
+        ChangeNotifierProvider(create: (_) => HistoryProvider()),
       ],
       child: const HostelHubApp(),
     ),
@@ -93,6 +98,9 @@ class HostelHubApp extends StatelessWidget {
         AppRoutes.roomChange:   (_) => const RoomChangeScreen(),
         AppRoutes.feePayment:   (_) => const FeePaymentScreen(),
         AppRoutes.editProfile:  (_) => const EditProfileScreen(),
+        AppRoutes.history:      (_) => const HistoryScreen(),
+        AppRoutes.helpFaq:      (_) => const HelpFaqScreen(),
+        AppRoutes.contactUs:    (_) => const ContactUsScreen(),
       },
     );
   }

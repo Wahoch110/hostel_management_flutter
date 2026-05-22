@@ -9,7 +9,7 @@ class RoomProvider extends ChangeNotifier {
       facilities: ['WiFi', 'AC', 'Attached Bath'], monthlyFee: 8500,
     ),
     RoomModel(
-      roomNumber: 'A-102', capacity: 3, type: 'Triple',
+      roomNumber: 'A-102', capacity: 3, type: 'Triple',                                                                                                                                                             
       status: 'Full', block: 'A', floor: '1st Floor',
       facilities: ['WiFi', 'Fan', 'Common Bath'], monthlyFee: 6500,
     ),

@@ -1,5 +1,3 @@
-
-
 class AppRoutes {
   AppRoutes._();
 
@@ -19,4 +17,8 @@ class AppRoutes {
   static const String roomChange   = '/room-change';
   static const String feePayment   = '/fee-payment';
   static const String editProfile  = '/edit-profile';
+
+  static const String history      = '/history';
+  static const String helpFaq      = '/help-faq';
+  static const String contactUs    = '/contact-us';
 }

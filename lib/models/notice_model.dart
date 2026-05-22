@@ -1,7 +1,5 @@
-// ============================================================
-// MODEL: NoticeModel
-// KEY CONCEPT: const constructor, final fields
-// ============================================================
+
+
 
 class NoticeModel {
   final String id;

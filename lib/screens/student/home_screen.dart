@@ -65,11 +65,13 @@ class HomeScreen extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
+                                color: Colors.white.withValues(alpha: 0.15),
                                 shape: BoxShape.circle),
                             child: const Icon(Icons.notifications_outlined,
                                 color: Colors.white, size: 22),
                           ),
+                          const SizedBox(width: 6),
+                          const _MoreMenu(),
                         ],
                       ),
 
@@ -189,6 +191,81 @@ class HomeScreen extends StatelessWidget {
 
 
 
+// ── Three-dot more menu ────────────────────────────────────────────────────────
+class _MoreMenu extends StatelessWidget {
+  const _MoreMenu();
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            shape: BoxShape.circle),
+        child: const Icon(Icons.more_vert,
+            color: Colors.white, size: 22),
+      ),
+      color: Colors.white,
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      offset: const Offset(0, 48),
+      onSelected: (value) {
+        switch (value) {
+          case 'history':
+            Navigator.pushNamed(context, AppRoutes.history);
+            break;
+          case 'faq':
+            Navigator.pushNamed(context, AppRoutes.helpFaq);
+            break;
+          case 'contact':
+            Navigator.pushNamed(context, AppRoutes.contactUs);
+            break;
+          case 'logout':
+            Navigator.pushNamedAndRemoveUntil(
+                context, AppRoutes.welcome, (route) => false);
+            break;
+        }
+      },
+      itemBuilder: (_) => [
+        _menuItem('history', Icons.history_rounded,
+            const Color(0xFF4F46E5), 'History'),
+        _menuItem('faq', Icons.help_outline_rounded,
+            const Color(0xFF10B981), 'Help & FAQs'),
+        _menuItem('contact', Icons.support_agent_outlined,
+            const Color(0xFFF59E0B), 'Contact Us'),
+        const PopupMenuDivider(),
+        _menuItem('logout', Icons.logout_rounded,
+            Colors.red, 'Logout'),
+      ],
+    );
+  }
+
+  PopupMenuItem<String> _menuItem(
+      String value, IconData icon, Color color, String label) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: color, size: 16),
+        ),
+        const SizedBox(width: 12),
+        Text(label,
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: value == 'logout'
+                    ? Colors.red
+                    : const Color(0xFF1F1F2E))),
+      ]),
+    );
+  }
+}
+
 class _SummaryCard extends StatelessWidget {
   final IconData icon;
   final String   label;
@@ -200,7 +277,7 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
       decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.18),
+          color: Colors.white.withValues(alpha: 0.18),
           borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,14 +322,14 @@ class _NoticePreviewCard extends StatelessWidget {
         decoration: BoxDecoration(
           color:        Colors.white,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                  color: _catColor.withOpacity(0.10), shape: BoxShape.circle),
+                  color: _catColor.withValues(alpha: 0.10), shape: BoxShape.circle),
               child: Icon(Icons.campaign_rounded, color: _catColor, size: 18),
             ),
             const SizedBox(width: 12),
@@ -276,3 +353,4 @@ class _NoticePreviewCard extends StatelessWidget {
     );
   }
 }
+
