@@ -209,28 +209,35 @@ HOSTEL_HUB/
 ```
 
 ---
-
 # Project Screenshots
 
 ## Dashboard
 
-![Dashboard](screenshots/dashboard.png.jpeg)
+![Dashboard](Screenshots/dashboard.png.jpeg)
+
+---
 
 ## Complaint Management Module
 
-![Complaint Module](screenshots/complaint-module.png.jpeg)
+![Complaint Module](Screenshots/complaint-module.png.jpeg)
+
+---
 
 ## Leave Request Management Module
 
-![Leave Module](screenshots/leave-module.png.jpeg)
+![Leave Module](Screenshots/leave-module.png.jpeg)
+
+---
 
 ## Postman API Testing
 
-![Postman Testing](screenshots/postman-api-testing.png.jpeg)
+![Postman Testing](Screenshots/postman-api-testing.png.jpeg)
+
+---
 
 ## MySQL Database
 
-![MySQL Database](screenshots/mysql-database.png.jpeg)
+![MySQL Database](Screenshots/mysql-database.png.jpeg)
 
 ---
 
