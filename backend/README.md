@@ -1,346 +1,294 @@
-# Hostel Hub
+# HostelHub Backend
 
-**Full Stack Hostel Management Mobile Application**
+**Node.js + Express.js + MySQL REST API**
 
-Hostel Hub is a full-stack mobile application developed using **Flutter**, **Node.js**, **Express.js**, and **MySQL**. The application provides hostel students with a centralized platform to manage complaints, leave requests, room bookings, notices, profile information, and other hostel-related services.
-
-This project demonstrates complete frontend development, backend REST API development, MySQL database integration, and CRUD operations using modern software engineering practices.
+This folder contains the backend REST API for the Hostel Hub Flutter application. The backend handles CRUD operations for the assignment modules and stores data in a MySQL database.
 
 ---
 
-# Project Overview
+## Backend Overview
 
-The Hostel Hub application was designed to simplify hostel management processes by providing students with a digital platform to interact with hostel services.
+The backend is built using **Node.js**, **Express.js**, and **MySQL**.
 
-The application includes:
+Implemented modules:
 
-- Student Authentication
-- Complaint Management
-- Leave Request Management
-- Room Booking
-- Notice Management
-- History Tracking
-- Profile Management
-- Contact & Support Features
+* Complaint Management
+* Leave Request Management
 
-For assignment requirements, two modules were fully integrated with a Node.js backend and MySQL database:
+Each module supports complete CRUD operations:
 
-- Complaint Management Module
-- Leave Request Management Module
+* Create
+* Read
+* Update
+* Delete
 
 ---
 
-# Assignment Requirements Covered
+## Technologies Used
 
-## Frontend
-
-- Flutter User Interface
-- Form Validation
-- API Integration
-- CRUD Screens
-
-## Backend
-
-- Node.js
-- Express.js
-- REST APIs
-- Route Management
-
-## Database
-
-- MySQL Integration
-- Database Design
-- CRUD Operations
-
-## Testing
-
-- Postman API Testing
-- Database Verification
+* Node.js
+* Express.js
+* MySQL
+* mysql2
+* cors
+* body-parser
+* nodemon
 
 ---
 
-# Features
+## Prerequisites
 
-## Authentication
+Before running the backend, install:
 
-- User Login
-- User Registration
-- Forgot Password
-- Welcome Screen
-- Splash Screen
-
-## Student Services
-
-- Complaint Management
-- Leave Request Management
-- Room Booking
-- History Tracking
-- Profile Management
-- Edit Profile
-- Contact Us
-- Help & FAQs
-- Fee Information
-
-## Administrative Features
-
-- Notice Management
-- Room Information
-
-## Backend Features
-
-- REST API Integration
-- MySQL Database Connectivity
-- CRUD Operations
-- Postman Tested Endpoints
+* Node.js v18 or higher
+* MySQL Server or XAMPP
+* MySQL Workbench or phpMyAdmin
+* Postman for API testing
 
 ---
 
-# Technologies Used
-
-## Frontend
-
-- Flutter
-- Dart
-- Provider State Management
-
-## Backend
-
-- Node.js
-- Express.js
-
-## Database
-
-- MySQL
-
-## Testing
-
-- Postman
-
-## Development Tools
-
-- VS Code
-- MySQL Workbench
-- GitHub
-- Git
-
----
-
-# Assignment Modules
-
-## Module 1: Complaint Management
-
-Implemented Complete CRUD Operations:
-
-- Create Complaint
-- Read Complaints
-- Update Complaint
-- Delete Complaint
-
-### API Endpoints
-
-| Method | Endpoint |
-|----------|----------|
-| GET | /complaints |
-| POST | /complaints |
-| PUT | /complaints/:id |
-| DELETE | /complaints/:id |
-
----
-
-## Module 2: Leave Request Management
-
-Implemented Complete CRUD Operations:
-
-- Create Leave Request
-- Read Leave Requests
-- Update Leave Request
-- Delete Leave Request
-
-### API Endpoints
-
-| Method | Endpoint |
-|----------|----------|
-| GET | /leaves |
-| POST | /leaves |
-| PUT | /leaves/:id |
-| DELETE | /leaves/:id |
-
----
-
-# Project Structure
+## Backend Folder Structure
 
 ```text
-HOSTEL_HUB/
+backend/
 
-├── android/
-├── ios/
-├── assets/
-
-├── backend/
-│   ├── routes/
-│   │   ├── complaints.js
-│   │   └── leaves.js
-│   ├── database.sql
-│   ├── db.js
-│   ├── package.json
-│   ├── POSTMAN_GUIDE.md
-│   └── server.js
-
-├── lib/
-│   ├── models/
-│   ├── providers/
-│   ├── routes/
-│   ├── screens/
-│   │   ├── auth/
-│   │   └── student/
-│   ├── services/
-│   ├── widgets/
-│   └── main.dart
-
-├── screenshots/
-│   ├── dashboard.png
-│   ├── complaint-module.png
-│   ├── leave-module.png
-│   ├── postman-api-testing.png
-│   └── mysql-database.png
-
-├── pubspec.yaml
-└── README.md
+├── routes/
+│   ├── complaints.js
+│   └── leaves.js
+│
+├── database.sql
+├── db.js
+├── package.json
+├── package-lock.json
+├── POSTMAN_GUIDE.md
+├── README.md
+└── server.js
 ```
 
 ---
 
-# Project Screenshots
+## Database Setup
 
-## Dashboard
-
-![Dashboard](screenshots/dashboard.png.jpeg)
-
-## Complaint Management Module
-
-![Complaint Module](screenshots/complaint-module.png.jpeg)
-
-## Leave Request Management Module
-
-![Leave Module](screenshots/leave-module.png.jpeg)
-
-## Postman API Testing
-
-![Postman Testing](screenshots/postman-api-testing.png.jpeg)
-
-## MySQL Database
-
-![MySQL Database](screenshots/mysql-database.png.jpeg)
-
----
-
-# Database
-
-**Database Name**
+Database name:
 
 ```sql
 hostel_hub_db
 ```
 
-**Tables**
+Tables:
 
-- complaints
-- leaves
+* complaints
+* leaves
 
-Database schema is available in:
+### Option 1: MySQL Workbench
+
+Open MySQL Workbench.
+
+Open a new SQL tab.
+
+Copy the complete content of:
 
 ```text
-backend/database.sql
+database.sql
 ```
+
+Paste it into MySQL Workbench.
+
+Run the script.
+
+This will:
+
+* Create the `hostel_hub_db` database
+* Create the `complaints` table
+* Create the `leaves` table
+* Insert sample records for testing, if included in the SQL file
 
 ---
 
-# Setup Instructions
+### Option 2: Command Line
 
-## 1. Clone Repository
+Run this command inside the backend folder:
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_LINK
-cd HOSTEL_HUB
+mysql -u root -p < database.sql
 ```
+
+Enter your MySQL password when asked.
 
 ---
 
-## 2. Database Setup
+## Database Configuration
 
-Create database:
-
-```sql
-CREATE DATABASE hostel_hub_db;
-```
-
-Run:
+Open:
 
 ```text
-backend/database.sql
+db.js
 ```
 
-inside MySQL Workbench.
+Update the MySQL connection if needed:
 
-Update credentials in:
-
-```text
-backend/db.js
+```js
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'hostel_hub_db',
+});
 ```
+
+If your MySQL has a password, add it here:
+
+```js
+password: 'your_mysql_password',
+```
+
+For XAMPP default MySQL, password is usually empty.
 
 ---
 
-## 3. Backend Setup
+## Install Dependencies
 
-Navigate to backend folder:
+Open terminal inside the backend folder:
 
 ```bash
 cd backend
 ```
 
-Install dependencies:
+Install packages:
 
 ```bash
 npm install
 ```
 
-Run backend:
+This installs:
+
+* express
+* mysql2
+* cors
+* body-parser
+* nodemon
+
+---
+
+## Run Backend Server
+
+### Development Mode
 
 ```bash
 npm run dev
 ```
 
-Backend URL:
+### Production Mode
+
+```bash
+npm start
+```
+
+Expected output:
+
+```text
+HostelHub backend running at http://localhost:3000
+MySQL connected to hostel_hub_db successfully!
+```
+
+---
+
+## Test API Health
+
+Open browser and visit:
 
 ```text
 http://localhost:3000
 ```
 
----
+Expected response:
 
-## 4. Flutter Setup
-
-Return to project root:
-
-```bash
-cd ..
-```
-
-Install packages:
-
-```bash
-flutter pub get
-```
-
-Run application:
-
-```bash
-flutter run
+```json
+{
+  "message": "HostelHub API is running!",
+  "version": "1.0.0"
+}
 ```
 
 ---
 
-## API Configuration
+## API Endpoints
+
+### Complaints
+
+| Method | Endpoint        | Description        |
+| ------ | --------------- | ------------------ |
+| GET    | /complaints     | Get all complaints |
+| POST   | /complaints     | Create a complaint |
+| PUT    | /complaints/:id | Update a complaint |
+| DELETE | /complaints/:id | Delete a complaint |
+
+---
+
+### Leave Requests
+
+| Method | Endpoint    | Description            |
+| ------ | ----------- | ---------------------- |
+| GET    | /leaves     | Get all leave requests |
+| POST   | /leaves     | Create a leave request |
+| PUT    | /leaves/:id | Update a leave request |
+| DELETE | /leaves/:id | Delete a leave request |
+
+---
+
+## Sample JSON Requests
+
+### Create Complaint
+
+```json
+{
+  "category": "Electricity",
+  "description": "Fan is not working"
+}
+```
+
+### Update Complaint
+
+```json
+{
+  "category": "Water",
+  "description": "Water supply issue in hostel block"
+}
+```
+
+### Create Leave Request
+
+```json
+{
+  "leave_date": "2026-06-30",
+  "return_date": "2026-07-13",
+  "reason": "Other",
+  "additional_details": "Summer vacations"
+}
+```
+
+### Update Leave Request
+
+```json
+{
+  "leave_date": "2026-07-01",
+  "return_date": "2026-07-15",
+  "reason": "Family Emergency",
+  "additional_details": "Updated leave request details"
+}
+```
+
+---
+
+## Flutter API Connection
+
+The Flutter frontend connects to this backend using the API service file:
+
+```text
+lib/services/api_service.dart
+```
+
+Use the correct base URL based on platform:
 
 ### Flutter Web
 
@@ -354,37 +302,53 @@ http://localhost:3000
 http://10.0.2.2:3000
 ```
 
-### Physical Device
+### Physical Android Device
+
+Use your computer local IP address:
 
 ```text
 http://YOUR_LOCAL_IP:3000
 ```
 
----
+Example:
 
-# Learning Outcomes
-
-Through this project, I learned:
-
-- Flutter Mobile Application Development
-- State Management using Provider
-- REST API Development using Express.js
-- Node.js Backend Development
-- MySQL Database Integration
-- CRUD Operations
-- API Testing using Postman
-- Full Stack Mobile Application Development
-- Git and GitHub Workflow
-- Software Engineering Best Practices
+```text
+http://192.168.1.95:3000
+```
 
 ---
 
-# Author
+## Postman Testing
+
+All API endpoints can be tested using Postman.
+
+For complete Postman testing instructions, see:
+
+```text
+POSTMAN_GUIDE.md
+```
+
+Test these operations for both modules:
+
+* POST
+* GET
+* PUT
+* DELETE
+
+---
+
+## Notes
+
+* Keep MySQL running before starting the backend.
+* Make sure `hostel_hub_db` exists before running the backend.
+* Update MySQL username and password in `db.js` if needed.
+* Keep backend running while testing the Flutter app.
+* Use Postman to verify all API endpoints.
+
+---
+
+## Author
 
 **Muhammad Raza**
-
-BS Software Engineering
-
-SZABIST
 
 Full Stack Mobile Application Development Project
