@@ -214,23 +214,23 @@ HOSTEL_HUB/
 
 ## Dashboard
 
-![Dashboard](screenshots/dashboard.png)
+![Dashboard](screenshots/dashboard.png.jpeg)
 
 ## Complaint Management Module
 
-![Complaint Module](screenshots/complaint-module.png)
+![Complaint Module](screenshots/complaint-module.png.jpeg)
 
 ## Leave Request Management Module
 
-![Leave Module](screenshots/leave-module.png)
+![Leave Module](screenshots/leave-module.png.jpeg)
 
 ## Postman API Testing
 
-![Postman Testing](screenshots/postman-api-testing.png)
+![Postman Testing](screenshots/postman-api-testing.png.jpeg)
 
 ## MySQL Database
 
-![MySQL Database](screenshots/mysql-database.png)
+![MySQL Database](screenshots/mysql-database.png.jpeg)
 
 ---
 
