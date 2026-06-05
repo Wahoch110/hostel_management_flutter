@@ -1,21 +1,15 @@
-const mysql = require('mysql2');
+const mysql = require("mysql2");
+require("dotenv").config();
 
-// Update password if your MySQL root user has a password set
-const db = mysql.createConnection({
-  host:        'localhost',
-  user:        'test_user',
-  password:    'your password',
-  database:    'Database Name ',
-  dateStrings: true,   // Return DATE columns as 'YYYY-MM-DD' strings
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error('MySQL connection failed:', err.message);
-    console.error('Make sure MySQL is running and  database exists.');
-    process.exit(1);
-  }
-  console.log('MySQL connected to database successfully!');
-});
-
-module.exports = db;
+module.exports = pool.promise();
