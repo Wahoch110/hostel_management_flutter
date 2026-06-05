@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/history_model.dart';
 import '../../providers/history_provider.dart';
+import '../../services/api_service.dart';
+import '../../services/complaint_service.dart';
+import '../../services/leave_service.dart';
 import 'complaint_screen.dart';
 import 'leave_request_screen.dart';
 import 'visitor_request_screen.dart';
@@ -21,11 +24,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
-    // Simulate a brief loading state on first open
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) setState(() => _isLoading = false);
-    });
     _searchCtrl.addListener(() => setState(() {}));
+    _loadFromApi();
   }
 
   @override
@@ -34,11 +34,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.dispose();
   }
 
-  Future<void> _onRefresh() async {
+  // ── Load complaints & leaves from backend ──────────────────────────────────
+  Future<void> _loadFromApi() async {
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) setState(() => _isLoading = false);
+    try {
+      final results = await Future.wait([
+        ComplaintService.fetchAll(),
+        LeaveService.fetchAll(),
+      ]);
+      if (!mounted) return;
+      // Merge: complaints first (DESC), then leaves (DESC)
+      final combined = [...results[0], ...results[1]];
+      context.read<HistoryProvider>().replaceApiRecords(combined);
+    } catch (_) {
+      // API unavailable — keep whatever records are already in the provider
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
+
+  Future<void> _onRefresh() => _loadFromApi();
 
   // ── Delete with confirmation ───────────────────────────────────────────────
   void _confirmDelete(BuildContext ctx, String id) {
@@ -59,18 +74,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
-    ).then((confirmed) {
-      if (confirmed == true && mounted) {
+    ).then((confirmed) async {
+      if (confirmed != true || !mounted) return;
+
+      try {
+        // Delete from backend if this is an API-backed record
+        if (ApiService.isComplaintRecord(id)) {
+          await ComplaintService.delete(id);
+        } else if (ApiService.isLeaveRecord(id)) {
+          await LeaveService.delete(id);
+        }
+        if (!mounted) return;
         context.read<HistoryProvider>().deleteRecord(id);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Record deleted.'),
+            content:          Text('Record deleted.'),
+            backgroundColor:  Colors.red,
+            duration:         Duration(seconds: 2),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '❌ Could not delete: ${e.toString().replaceAll('Exception: ', '')}',
+            ),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -107,9 +142,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   String _fmtTime(TimeOfDay t) {
-    final h = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
+    final h   = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
     final min = t.minute.toString().padLeft(2, '0');
-    final ap = t.period == DayPeriod.am ? 'AM' : 'PM';
+    final ap  = t.period == DayPeriod.am ? 'AM' : 'PM';
     return '$h:$min $ap';
   }
 
@@ -118,29 +153,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
     switch (record.type) {
       case RecordType.complaint:
         return _ComplaintCard(
-          record: record as ComplaintRecord,
-          onEdit: () => _editRecord(record),
+          record:   record as ComplaintRecord,
+          onEdit:   () => _editRecord(record),
           onDelete: () => _confirmDelete(context, record.id),
         );
       case RecordType.leaveRequest:
         return _LeaveCard(
-          record: record as LeaveRecord,
-          fmtDate: _fmtDate,
-          onEdit: () => _editRecord(record),
+          record:   record as LeaveRecord,
+          fmtDate:  _fmtDate,
+          onEdit:   () => _editRecord(record),
           onDelete: () => _confirmDelete(context, record.id),
         );
       case RecordType.visitorRequest:
         return _VisitorCard(
-          record: record as VisitorRecord,
-          fmtDate: _fmtDate,
-          fmtTime: _fmtTime,
-          onEdit: () => _editRecord(record),
+          record:   record as VisitorRecord,
+          fmtDate:  _fmtDate,
+          fmtTime:  _fmtTime,
+          onEdit:   () => _editRecord(record),
           onDelete: () => _confirmDelete(context, record.id),
         );
       case RecordType.roomChange:
         return _RoomChangeCard(
-          record: record as RoomChangeRecord,
-          onEdit: () => _editRecord(record),
+          record:   record as RoomChangeRecord,
+          onEdit:   () => _editRecord(record),
           onDelete: () => _confirmDelete(context, record.id),
         );
     }
@@ -159,12 +194,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: TextField(
               controller: _searchCtrl,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF1F1F2E)),
+              style:
+                  const TextStyle(fontSize: 14, color: Color(0xFF1F1F2E)),
               decoration: InputDecoration(
                 hintText: 'Search complaints, leave, visitor...',
                 hintStyle:
                     const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+                prefixIcon:
+                    const Icon(Icons.search, color: Color(0xFF9CA3AF)),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close,
@@ -172,23 +209,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         onPressed: () => _searchCtrl.clear(),
                       )
                     : null,
-                filled: true,
-                fillColor: Colors.white,
+                filled:      true,
+                fillColor:   Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
+                  borderSide:   BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
+                  borderSide:   BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide:
                       const BorderSide(color: Color(0xFF4F46E5), width: 2),
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 11),
               ),
             ),
           ),
@@ -206,7 +243,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       final filtered = hp.search(_searchCtrl.text);
 
                       if (hp.records.isEmpty) {
-                        return _EmptyState(
+                        return const _EmptyState(
                             message:
                                 'No submissions yet.\nUse Quick Actions to submit requests.');
                       }
@@ -218,7 +255,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       }
 
                       return RefreshIndicator(
-                        color: const Color(0xFF4F46E5),
+                        color:     const Color(0xFF4F46E5),
                         onRefresh: _onRefresh,
                         child: ListView.builder(
                           padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
@@ -255,8 +292,8 @@ class _EmptyState extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEEF2FF),
+              decoration: const BoxDecoration(
+                color: Color(0xFFEEF2FF),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.history_rounded,
@@ -281,12 +318,12 @@ class _EmptyState extends StatelessWidget {
 
 // ── Shared card shell ─────────────────────────────────────────────────────────
 class _CardShell extends StatelessWidget {
-  final Color accentColor;
-  final IconData typeIcon;
-  final String typeLabel;
-  final List<Widget> fields;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final Color         accentColor;
+  final IconData      typeIcon;
+  final String        typeLabel;
+  final List<Widget>  fields;
+  final VoidCallback  onEdit;
+  final VoidCallback  onDelete;
 
   const _CardShell({
     required this.accentColor,
@@ -305,7 +342,7 @@ class _CardShell extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)
         ],
       ),
       child: Column(
@@ -317,7 +354,7 @@ class _CardShell extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.12),
+                    color: accentColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8)),
                 child: Icon(typeIcon, color: accentColor, size: 16),
               ),
@@ -330,21 +367,21 @@ class _CardShell extends StatelessWidget {
               const Spacer(),
               // Edit button
               InkWell(
-                onTap: onEdit,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
+                onTap:         onEdit,
+                borderRadius:  BorderRadius.circular(8),
+                child: const Padding(
+                  padding: EdgeInsets.all(6),
                   child: Icon(Icons.edit_outlined,
-                      size: 18, color: const Color(0xFF4F46E5)),
+                      size: 18, color: Color(0xFF4F46E5)),
                 ),
               ),
               const SizedBox(width: 2),
               // Delete button
               InkWell(
-                onTap: onDelete,
+                onTap:        onDelete,
                 borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
+                child: const Padding(
+                  padding: EdgeInsets.all(6),
                   child:
                       Icon(Icons.delete_outline, size: 18, color: Colors.red),
                 ),
@@ -401,8 +438,8 @@ class _FieldRow extends StatelessWidget {
 // ── Complaint card ────────────────────────────────────────────────────────────
 class _ComplaintCard extends StatelessWidget {
   final ComplaintRecord record;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback    onEdit;
+  final VoidCallback    onDelete;
 
   const _ComplaintCard(
       {required this.record, required this.onEdit, required this.onDelete});
@@ -411,12 +448,12 @@ class _ComplaintCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CardShell(
       accentColor: const Color(0xFFEF4444),
-      typeIcon: Icons.report_problem_outlined,
-      typeLabel: 'Complaint',
-      onEdit: onEdit,
-      onDelete: onDelete,
+      typeIcon:    Icons.report_problem_outlined,
+      typeLabel:   'Complaint',
+      onEdit:      onEdit,
+      onDelete:    onDelete,
       fields: [
-        _FieldRow(label: 'Category', value: record.category),
+        _FieldRow(label: 'Category',    value: record.category),
         _FieldRow(label: 'Description', value: record.description),
       ],
     );
@@ -425,10 +462,10 @@ class _ComplaintCard extends StatelessWidget {
 
 // ── Leave card ────────────────────────────────────────────────────────────────
 class _LeaveCard extends StatelessWidget {
-  final LeaveRecord record;
+  final LeaveRecord              record;
   final String Function(DateTime) fmtDate;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback              onEdit;
+  final VoidCallback              onDelete;
 
   const _LeaveCard({
     required this.record,
@@ -441,15 +478,15 @@ class _LeaveCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CardShell(
       accentColor: const Color(0xFFF59E0B),
-      typeIcon: Icons.exit_to_app_outlined,
-      typeLabel: 'Leave Request',
-      onEdit: onEdit,
-      onDelete: onDelete,
+      typeIcon:    Icons.exit_to_app_outlined,
+      typeLabel:   'Leave Request',
+      onEdit:      onEdit,
+      onDelete:    onDelete,
       fields: [
-        _FieldRow(label: 'Leave Date', value: fmtDate(record.leaveDate)),
+        _FieldRow(label: 'Leave Date',  value: fmtDate(record.leaveDate)),
         _FieldRow(label: 'Return Date', value: fmtDate(record.returnDate)),
-        _FieldRow(label: 'Reason', value: record.reason),
-        _FieldRow(label: 'Details', value: record.additionalDetails),
+        _FieldRow(label: 'Reason',      value: record.reason),
+        _FieldRow(label: 'Details',     value: record.additionalDetails),
       ],
     );
   }
@@ -457,11 +494,11 @@ class _LeaveCard extends StatelessWidget {
 
 // ── Visitor card ──────────────────────────────────────────────────────────────
 class _VisitorCard extends StatelessWidget {
-  final VisitorRecord record;
-  final String Function(DateTime) fmtDate;
+  final VisitorRecord              record;
+  final String Function(DateTime)  fmtDate;
   final String Function(TimeOfDay) fmtTime;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback               onEdit;
+  final VoidCallback               onDelete;
 
   const _VisitorCard({
     required this.record,
@@ -475,19 +512,18 @@ class _VisitorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CardShell(
       accentColor: const Color(0xFF10B981),
-      typeIcon: Icons.people_outline_rounded,
-      typeLabel: 'Visitor Request',
-      onEdit: onEdit,
-      onDelete: onDelete,
+      typeIcon:    Icons.people_outline_rounded,
+      typeLabel:   'Visitor Request',
+      onEdit:      onEdit,
+      onDelete:    onDelete,
       fields: [
         _FieldRow(label: 'Visitor Name', value: record.visitorName),
-        _FieldRow(label: 'Phone', value: record.visitorPhone),
-        _FieldRow(label: 'Purpose', value: record.purpose),
+        _FieldRow(label: 'Phone',        value: record.visitorPhone),
+        _FieldRow(label: 'Purpose',      value: record.purpose),
         _FieldRow(label: 'Relationship', value: record.relationship),
         _FieldRow(
             label: 'Visit Date',
-            value:
-                '${fmtDate(record.visitDate)}  ${fmtTime(record.visitTime)}'),
+            value: '${fmtDate(record.visitDate)}  ${fmtTime(record.visitTime)}'),
       ],
     );
   }
@@ -496,8 +532,8 @@ class _VisitorCard extends StatelessWidget {
 // ── Room change card ──────────────────────────────────────────────────────────
 class _RoomChangeCard extends StatelessWidget {
   final RoomChangeRecord record;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback     onEdit;
+  final VoidCallback     onDelete;
 
   const _RoomChangeCard(
       {required this.record, required this.onEdit, required this.onDelete});
@@ -510,14 +546,14 @@ class _RoomChangeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CardShell(
       accentColor: const Color(0xFF8B5CF6),
-      typeIcon: Icons.swap_horiz_rounded,
-      typeLabel: 'Room Change',
-      onEdit: onEdit,
-      onDelete: onDelete,
+      typeIcon:    Icons.swap_horiz_rounded,
+      typeLabel:   'Room Change',
+      onEdit:      onEdit,
+      onDelete:    onDelete,
       fields: [
         _FieldRow(label: 'Current Room', value: record.currentRoom),
-        _FieldRow(label: 'Requested', value: record.requestedRoom),
-        _FieldRow(label: 'Reason', value: record.reason),
+        _FieldRow(label: 'Requested',    value: record.requestedRoom),
+        _FieldRow(label: 'Reason',       value: record.reason),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -533,7 +569,7 @@ class _RoomChangeCard extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
-                  color: _priorityColor.withOpacity(0.12),
+                  color: _priorityColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20)),
               child: Text(record.priority,
                   style: TextStyle(

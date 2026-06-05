@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/history_model.dart';
 import '../../providers/history_provider.dart';
+import '../../services/api_service.dart';
+import '../../services/complaint_service.dart';
 import '../../widgets/custom_text_field.dart';
 
 class ComplaintScreen extends StatefulWidget {
@@ -29,53 +31,74 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
   void initState() {
     super.initState();
     if (_isEditing) {
-      _category        = widget.editRecord!.category;
-      _descCtrl.text   = widget.editRecord!.description;
+      _category      = widget.editRecord!.category;
+      _descCtrl.text = widget.editRecord!.description;
     }
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-    if (!mounted) return;
 
+    setState(() => _isLoading = true);
     final provider = context.read<HistoryProvider>();
 
-    if (_isEditing) {
-      provider.updateRecord(
-        widget.editRecord!.copyWith(
-          category:    _category,
-          description: _descCtrl.text.trim(),
-        ),
-      );
+    try {
+      if (_isEditing) {
+        final record = widget.editRecord!;
+        // If it's an API record, persist the change to the backend
+        if (ApiService.isApiRecord(record.id)) {
+          await ComplaintService.update(
+              record.id, _category, _descCtrl.text.trim());
+        }
+        provider.updateRecord(
+          record.copyWith(
+            category:    _category,
+            description: _descCtrl.text.trim(),
+          ),
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:         Text('✅ Complaint updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        // Create via API → get back the record with a real database id
+        final newRecord = await ComplaintService.create(
+            _category, _descCtrl.text.trim());
+        if (!mounted) return;
+        provider.addRecord(newRecord);
+        _descCtrl.clear();
+        setState(() => _category = 'Electricity');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:         Text('✅ Complaint submitted! Admin will respond shortly.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:         Text('✅ Complaint updated successfully!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Text(
+            '❌ ${e.toString().replaceAll('Exception: ', '')}',
+          ),
+          backgroundColor: Colors.red,
         ),
       );
-      Navigator.pop(context);
-    } else {
-      provider.addRecord(ComplaintRecord(
-        id:          HistoryProvider.generateId(),
-        category:    _category,
-        description: _descCtrl.text.trim(),
-      ));
-      _descCtrl.clear();
-      setState(() => _category = 'Electricity');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:         Text('✅ Complaint submitted! Admin will respond shortly.'),
-          backgroundColor: Colors.green,
-        ),
-      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
-  void dispose() { _descCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _descCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,10 +174,12 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
                 controller: _descCtrl,
                 maxLines:   4,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty)
+                  if (v == null || v.trim().isEmpty) {
                     return 'Description is required';
-                  if (v.trim().length < 10)
+                  }
+                  if (v.trim().length < 10) {
                     return 'Too short — add more detail';
+                  }
                   return null;
                 },
               ),
@@ -162,12 +187,14 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
               const SizedBox(height: 10),
 
               SizedBox(
-                width: double.infinity, height: 52,
+                width: double.infinity,
+                height: 52,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
                   child: _isLoading
                       ? const SizedBox(
-                          width: 22, height: 22,
+                          width: 22,
+                          height: 22,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2.5))
                       : Text(_isEditing

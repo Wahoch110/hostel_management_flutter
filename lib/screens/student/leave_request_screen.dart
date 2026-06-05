@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/history_model.dart';
 import '../../providers/history_provider.dart';
+import '../../services/api_service.dart';
+import '../../services/leave_service.dart';
 import '../../widgets/custom_text_field.dart';
 
 class LeaveRequestScreen extends StatefulWidget {
@@ -32,16 +34,18 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
   void initState() {
     super.initState();
     if (_isEditing) {
-      _leaveDate        = widget.editRecord!.leaveDate;
-      _returnDate       = widget.editRecord!.returnDate;
-      _reason           = widget.editRecord!.reason;
-      _descCtrl.text    = widget.editRecord!.additionalDetails;
+      _leaveDate     = widget.editRecord!.leaveDate;
+      _returnDate    = widget.editRecord!.returnDate;
+      _reason        = widget.editRecord!.reason;
+      _descCtrl.text = widget.editRecord!.additionalDetails;
     }
   }
 
   String _fmt(DateTime d) {
-    const months = ['', 'Jan','Feb','Mar','Apr','May','Jun',
-        'Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
     return '${d.day} ${months[d.month]} ${d.year}';
   }
 
@@ -59,8 +63,7 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
       ),
     );
     if (picked != null) {
-      setState(
-          () => isLeave ? _leaveDate = picked : _returnDate = picked);
+      setState(() => isLeave ? _leaveDate = picked : _returnDate = picked);
     }
   }
 
@@ -80,37 +83,61 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-    if (!mounted) return;
-
     final provider = context.read<HistoryProvider>();
 
-    if (_isEditing) {
-      provider.updateRecord(
-        widget.editRecord!.copyWith(
-          leaveDate:         _leaveDate,
-          returnDate:        _returnDate,
-          reason:            _reason,
-          additionalDetails: _descCtrl.text.trim(),
+    try {
+      if (_isEditing) {
+        final record = widget.editRecord!;
+        // Persist change to backend if it's an API-backed record
+        if (ApiService.isApiRecord(record.id)) {
+          await LeaveService.update(
+            record.id,
+            _leaveDate!,
+            _returnDate!,
+            _reason,
+            _descCtrl.text.trim(),
+          );
+        }
+        provider.updateRecord(
+          record.copyWith(
+            leaveDate:         _leaveDate,
+            returnDate:        _returnDate,
+            reason:            _reason,
+            additionalDetails: _descCtrl.text.trim(),
+          ),
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('✅ Leave request updated successfully!'),
+            backgroundColor: Colors.green));
+      } else {
+        // Create via API → get back the record with a real database id
+        final newRecord = await LeaveService.create(
+          _leaveDate!,
+          _returnDate!,
+          _reason,
+          _descCtrl.text.trim(),
+        );
+        if (!mounted) return;
+        provider.addRecord(newRecord);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('✅ Leave request submitted! Awaiting admin approval.'),
+            backgroundColor: Colors.green));
+      }
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '❌ ${e.toString().replaceAll('Exception: ', '')}',
+          ),
+          backgroundColor: Colors.red,
         ),
       );
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('✅ Leave request updated successfully!'),
-          backgroundColor: Colors.green));
-    } else {
-      provider.addRecord(LeaveRecord(
-        id:                HistoryProvider.generateId(),
-        leaveDate:         _leaveDate!,
-        returnDate:        _returnDate!,
-        reason:            _reason,
-        additionalDetails: _descCtrl.text.trim(),
-      ));
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('✅ Leave request submitted! Awaiting admin approval.'),
-          backgroundColor: Colors.green));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-    Navigator.pop(context);
   }
 
   Widget _datePicker(
@@ -130,8 +157,8 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
           onTap: () => _pickDate(isLeave: isLeave),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 14),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
@@ -171,7 +198,10 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
       );
 
   @override
-  void dispose() { _descCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _descCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -209,13 +239,9 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
               const SizedBox(height: 20),
 
               _datePicker(
-                  label: 'Leave Date',
-                  date: _leaveDate,
-                  isLeave: true),
+                  label: 'Leave Date', date: _leaveDate, isLeave: true),
               _datePicker(
-                  label: 'Return Date',
-                  date: _returnDate,
-                  isLeave: false),
+                  label: 'Return Date', date: _returnDate, isLeave: false),
 
               const Text('Reason for Leave',
                   style: TextStyle(
@@ -248,12 +274,14 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
               ),
 
               SizedBox(
-                width: double.infinity, height: 52,
+                width: double.infinity,
+                height: 52,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
                   child: _isLoading
                       ? const SizedBox(
-                          width: 22, height: 22,
+                          width: 22,
+                          height: 22,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2.5))
                       : Text(_isEditing

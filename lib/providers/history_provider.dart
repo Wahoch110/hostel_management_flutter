@@ -24,6 +24,16 @@ class HistoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Replace all API-sourced records (prefixed "c_" or "l_") with a fresh list
+  // fetched from the backend. Local-only records (other types) are preserved.
+  void replaceApiRecords(List<HistoryRecord> apiRecords) {
+    _records.removeWhere(
+      (r) => r.id.startsWith('c_') || r.id.startsWith('l_'),
+    );
+    _records.insertAll(0, apiRecords);
+    notifyListeners();
+  }
+
   List<HistoryRecord> search(String query) {
     if (query.trim().isEmpty) return records;
     final q = query.toLowerCase();
